@@ -20,11 +20,24 @@ using Plots, PlutoUI, LaTeXStrings, ShortCodes, LinearAlgebra
 # ╔═╡ f87f000f-e0c9-46eb-a242-89a4290bd84f
 md"""
 ### Numerical solution
-Here, you can chose the number of intervals with which to numerically compute the solution to the heat equation:
+In the discretized equation $(*)$ above, each temperature value $u_{i,j}$ depends on its neighboring values. Thus, we end up with a linear system,
+```math
+A u = b
+```
+which we need to solve to obtain the temperature values at each inner node. Here, $A$ is the coefficient matrix, $u$ contains our unknown temperature values $u_{i,j}$ that we want to solve for, and $b$ holds the right-hand side of the system, i.e., $-h^2 f_{i,j}$.
 
-Number of intervals ``N``: $(@bind N Slider(4:30, default=5, show_value=true))
+We will solve the system using one of Julia's built-in linear solvers from the `LinearAlgebra` module. For simplicity, we will use $f(x,y) = 2$ everywhere:
+"""
 
-In the plot below, you can see a surface plot of the numerical solution, where the height indicates the value of the temperature for a given point. Increasing $N$, and thus decreasing the spacing between the nodes $h$, will lead to longer computing times but also a more accurate solution.
+# ╔═╡ a7e57f8e-2032-419f-b957-12e90c3b9773
+md"""
+In the plot below, you can see a surface plot of the numerical solution, where the height indicates the value of the temperature at a given point. Increasing the number of intervals $N$, and thus decreasing the spacing between the nodes $h$, will lead to longer computing times but also a more accurate solution.
+"""
+
+# ╔═╡ 25a2120b-e9cd-48bc-901e-5611a2330f99
+md"""
+Number of intervals ``N``: $(@bind N Slider(4:30, default=5, show_value=true)) | 
+Camera angle: $(@bind angle Slider(1:90, default=45, show_value=false))
 """
 
 # ╔═╡ 4de22c75-0d00-4838-8ba4-52bab4dab89e
@@ -37,13 +50,7 @@ In this notebook, we will approximate the solution to the steady state heat equa
 \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} = -\frac{1}{\kappa} f,
 \end{equation}
 ```
-using a **finite difference method**. Here, ``u(x, y)`` is the temperature, ``x`` and ``y`` are the spatial directions, ``\kappa`` is the thermal conductivity, and ``f(x, y)`` is a known heat source. For simplicity, we will assume ``\kappa`` to be one and $f(x,y) = 2$ everywhere, i.e., we are trying to solve the following equation:
-```math
-\begin{equation}
-\frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} = -2.
-\end{equation}
-```
-The steady state heat equation is a prototypical example for a so-called *Poisson problem*.
+using a **finite difference method**. Here, ``u(x, y)`` is the temperature, ``x`` and ``y`` are the spatial directions, ``\kappa`` is the thermal conductivity, and ``f(x, y)`` is a known heat source. For simplicity, we will assume $\kappa = 1$ in the following sections and drop it from the equations. The steady state heat equation is a prototypical example for a so-called *Poisson problem*.
 
 Our computational domain is $\Omega = [0, 1]^2$, and we assume $u$ to be zero on all boundaries, i.e., $u(x,y) = 0$ if $x \in \{0,1\}$ or $y \in \{0, 1\}$. We discretize our domain with $N + 1$ nodes in each spatial direction on a rectangular grid. The nodes $(x_i, y_j)$ with $i, j = 0, 1, \ldots, N$ are equidistantly placed and their positions are computed as
 ```math
@@ -54,68 +61,39 @@ y_j &= jh,
 ```
 where the $h = 1/N$ is the distance between the nodes in each axis direction.
 
-For the discretization of the heat equation, we use a second-order central finite difference stencil. We use it to approximate the partial derivatives in the heat equation above, yielding
+To discretize the heat equation, we use second-order central finite differences to approximate the partial derivative in the $x$-direction,
+```math
+\frac{\partial u(x, y)}{\partial x} \approx \frac{u(x-h, y) - 2 u(x, y) + u(x+h, y)}{h^2}
+```
+and likewise for the derivaties in the $y$-direction. Inserted in the heat equation above, we obtain
 ```math
 \begin{equation}
-\frac{u_{i-1,j} - 2 u_{i,j} + u_{i+1,j}}{h^2} + \frac{u_{i,j-1} - 2 u_{i,j} + u_{i,j+1}}{h^2} = -f(x_i, y_j),\qquad i,j = 1, \ldots, N-1,
+\frac{u_{i-1,j} - 2 u_{i,j} + u_{i+1,j}}{h^2} + \frac{u_{i,j-1} - 2 u_{i,j} + u_{i,j+1}}{h^2} = -f_{i,j},\quad i,j = 1, \ldots, N-1,
 \end{equation}
 ```
-where $u_{i,j} = u(x_i, y_j)$ is the value of the temperature at node $(i,j$). In the plot below, you can see the domain $\Omega$ and the node locations for the chosen $N$. The green shape denotes the numerical stencil for a user-selected $(i, j)$ pair, i.e., it includes all neighbor nodes that are used to compute approximate the solution at the central node.
+where $u_{i,j} = u(x_i, y_j)$ is the value of the temperature at node $(i,j$), and $f_{i,j} = f(x_i, y_j)$. We can further simplify this equation to
+```math
+\begin{equation}
+u_{i-1,j} + u_{i,j-1} - 4 u_{i,j} + u_{i+1,j} + u_{i,j+1} = -h^2 f_{i,j},\quad i,j = 1, \ldots, N-1, \quad (*)
+\end{equation}
+```
+In the plot below, you can see the domain $\Omega$ and the node locations for the chosen $N$ (violet circles for inner nodes, red diamonds for boundary nodes). The green shape denotes the numerical stencil for a user-selected $(i, j)$ pair, i.e., it includes all neighbor nodes that are used to compute approximate the solution at the central node.
 
 Index ``i``: $(@bind idx_i Slider(1:(N-1), default=3, show_value=true)) | Index ``j``: $(@bind idx_j Slider(1:(N-1), default=1, show_value=true))
 """
 
-# ╔═╡ 138b0481-7d42-4197-8ca2-b3fb073366a0
-md"""
-The following plot shows the sparsity pattern of the matrix $A$ that represents the discretization with a finite difference method as a linear system.
-"""
-
-# ╔═╡ ac216c60-8288-465b-ab2b-2ba3e7701d02
-begin
-	m = (N - 1)^2
-	markersize = if N == 4
-	    15
-	elseif N == 5
-		11
-	elseif N == 6
-		7
-	elseif N == 7
-		4
-	elseif N == 8
-		3
-	else
-		2
-	end
-	markersizes_small = Dict(5=>11, 6=>7, 7=>4, 8=>3)
-	
-	A = diagm(0 => fill(-4, m),
-		        1 => fill(1, m - 1),
-		        N-1 => fill(1, m - (N - 1)),
-		        -1 => fill(1, m - 1),
-		        -(N-1) => fill(1, m - (N - 1)),
-	)
-	for i in (N - 1):(N - 1):(m - 1)
-		A[i, i+1] = 0
-		A[i+1, i] = 0
-	end
-	spy(A + UniformScaling(5), markersize=markersize, markershape=:square)
-end
-
-# ╔═╡ eb184f17-09c4-426e-80bb-f7d5867a01a4
-begin
-	h = 1 / N
-	b = -h^2 * 2 * ones(m)
-	x = A \ b
-	surface(reshape(x, (N - 1, N - 1)), camera=(45, 45), zlims=(0.0, 0.15))
-end
-
 # ╔═╡ c5689d78-a0ae-432d-b7cd-a3de894d4443
 begin
+	h = 1 / N
 	plot([0.0, 1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 1.0, 0.0],
 		aspect_ratio=:equal, xlims=(-0.1, 1.1), ylims=(-0.1, 1.1), label=L"\Omega", color=:black, lw=3)
-	plot!([0.0, 1.0], [1.0, 1.0], fillrange=0, fillcolor=:black, fillalpha=0.03, label="")
-	scatter!([(x, y) for x in 0.0:h:1.0 for y in 0.0:h:1.0],
-		color=:violet, label="nodes")
+	plot!([0.0, 1.0], [1.0, 1.0], fillrange=0, fillcolor=:black, fillalpha=0.1, label="")
+	scatter!([(x, y) for x in (0.0+h):h:(1.0-h) for y in (0.0+h):h:(1.0-h)],
+		color=:violet, label="inner nodes")
+	scatter!([(x, y) for x in 0.0:h:1.0 for y in 0:1],
+		color=:red, label="boundary nodes", markershape=:diamond)
+	scatter!([(x, y) for x in 0:1 for y in (0.0+h):h:(1.0-h)],
+		color=:red, label="", markershape=:diamond)
 
 	cx, cy = (idx_i*h, idx_j*h)
     plot!([
@@ -137,6 +115,70 @@ begin
 	lw=2, label="stencil", color=:green)
 end
 
+# ╔═╡ 138b0481-7d42-4197-8ca2-b3fb073366a0
+md"""
+### Assembling the linear system
+From equation $(*)$ above, we can assemble our coefficient matrix $A$ that represents our linear system of equations (see class notes):
+"""
+
+# ╔═╡ 8e2710f6-9e2c-47a9-8a1e-33c6df4386cf
+begin
+	m = (N - 1)^2 # Matrix size
+	
+	# Banded matrix with full bands
+	A = diagm(    0  => fill(-4, m),
+	              1  => fill( 1, m - 1),
+		        N-1  => fill( 1, m - (N - 1)),
+		         -1  => fill( 1, m - 1),
+		      -(N-1) => fill( 1, m - (N - 1)),
+	)
+	
+	# Reset values to obtain block structure
+	for i in (N - 1):(N - 1):(m - 1)
+		A[i, i+1] = 0
+		A[i+1, i] = 0
+	end
+	
+	nothing # hide output
+end
+
+# ╔═╡ f185aacd-0334-4217-8fa9-9fd0776c12c6
+begin
+	b = -h^2 * 2 * ones(m) # build right-hand side
+	u = A \ b # solve linear system
+	nothing # hide output
+end
+
+# ╔═╡ eb184f17-09c4-426e-80bb-f7d5867a01a4
+begin
+	surface(reshape(u, (N - 1, N - 1)), camera=(angle, 45), zlims=(0.0, 0.15)) # Plot
+end
+
+# ╔═╡ 52e5b8cc-d18a-4e20-bc66-54c010e2cc1f
+md"""
+The following plot shows the sparsity pattern of the matrix $A$ that represents the discretization with a finite difference method as a linear system.
+"""
+
+# ╔═╡ ac216c60-8288-465b-ab2b-2ba3e7701d02
+begin
+	markersize = if N == 4
+	    15
+	elseif N == 5
+		11
+	elseif N == 6
+		7
+	elseif N == 7
+		4
+	elseif N == 8
+		3
+	else
+		2
+	end
+	markersizes_small = Dict(5=>11, 6=>7, 7=>4, 8=>3)
+	
+	spy(A + UniformScaling(5), markersize=markersize, markershape=:square)
+end
+
 # ╔═╡ 4376970c-ea81-415e-bdb8-c35d36751536
 md"""
 Below, you can also see the numerical values of the matrix A:
@@ -144,6 +186,11 @@ Below, you can also see the numerical values of the matrix A:
 
 # ╔═╡ 625a431f-9187-4c17-9411-3e9078499c38
 A
+
+# ╔═╡ 95fdd1b4-3e76-4dbd-976b-2243aea1e8b5
+md"""
+Note that for simplicity we use a classical or *dense* matrix representation here, where each entry of the matrix is stored explicitly. In a real application, one would use a *sparse* matrix representation that only stores the non-zero elements explicitly.
+"""
 
 # ╔═╡ 6b49c667-b16e-44f3-9f0d-2b8a62f5efda
 md"""
@@ -1171,11 +1218,17 @@ version = "1.4.1+0"
 # ╟─4de22c75-0d00-4838-8ba4-52bab4dab89e
 # ╟─c5689d78-a0ae-432d-b7cd-a3de894d4443
 # ╟─f87f000f-e0c9-46eb-a242-89a4290bd84f
+# ╠═f185aacd-0334-4217-8fa9-9fd0776c12c6
+# ╟─a7e57f8e-2032-419f-b957-12e90c3b9773
 # ╟─eb184f17-09c4-426e-80bb-f7d5867a01a4
+# ╟─25a2120b-e9cd-48bc-901e-5611a2330f99
 # ╟─138b0481-7d42-4197-8ca2-b3fb073366a0
+# ╠═8e2710f6-9e2c-47a9-8a1e-33c6df4386cf
+# ╟─52e5b8cc-d18a-4e20-bc66-54c010e2cc1f
 # ╟─ac216c60-8288-465b-ab2b-2ba3e7701d02
 # ╟─4376970c-ea81-415e-bdb8-c35d36751536
 # ╟─625a431f-9187-4c17-9411-3e9078499c38
+# ╟─95fdd1b4-3e76-4dbd-976b-2243aea1e8b5
 # ╟─6b49c667-b16e-44f3-9f0d-2b8a62f5efda
 # ╟─b8f81a3f-d773-4e67-b8d7-e1734b04abaa
 # ╠═a22d543c-6a50-11ed-002d-7f2fe5bd7276
