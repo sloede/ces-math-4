@@ -63,9 +63,9 @@ where the $h = 1/N$ is the distance between the nodes in each axis direction.
 
 To discretize the heat equation, we use second-order central finite differences to approximate the partial derivative in the $x$-direction,
 ```math
-\frac{\partial u(x, y)}{\partial x} \approx \frac{u(x-h, y) - 2 u(x, y) + u(x+h, y)}{h^2}
+\frac{\partial^2 u(x, y)}{\partial x^2} \approx \frac{u(x-h, y) - 2 u(x, y) + u(x+h, y)}{h^2}
 ```
-and likewise for the derivaties in the $y$-direction. Inserted in the heat equation above, we obtain
+and likewise for the derivative in the $y$-direction. Inserted in the heat equation above, we obtain
 ```math
 \begin{equation}
 \frac{u_{i-1,j} - 2 u_{i,j} + u_{i+1,j}}{h^2} + \frac{u_{i,j-1} - 2 u_{i,j} + u_{i,j+1}}{h^2} = -f_{i,j},\quad i,j = 1, \ldots, N-1,
