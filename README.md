@@ -5,7 +5,10 @@ bachelor program at RWTH Aachen University (summer term 2023).
 
 ## Pluto notebooks
 Notebooks available in this repository:
-* **Notebook 1: Finite difference method**
+* **Notebook 1: Discrete Fourier Transform**
+  ([Pluto link](https://raw.githubusercontent.com/sloede/ces-math-4/main/notebooks/discrete_fourier_transform.jl),
+   [HTML preview](https://ces-math-4.lakemper.eu/notebooks/html/discrete_fourier_transform.jl.html))
+* **Notebook 2: Finite difference method**
   ([Pluto link](https://raw.githubusercontent.com/sloede/ces-math-4/main/notebooks/finite_difference_method.jl),
    [HTML preview](https://ces-math-4.lakemper.eu/notebooks/html/finite_difference_method.jl.html))
 
@@ -18,7 +21,7 @@ The following description is roughly based on the excellent instructions
 
 ### Get Julia
 To get Julia, go to
-[https://julialang.org/downloads/](https://ces-math-4.lakemper.eu/)
+[https://julialang.org/downloads/](https://julialang.org/downloads/)
 and download the *current stable release*
 of Julia (not the LTS version, no pre-releases etc.). Check out the
 platform-specific instructions for more information, e.g., for
@@ -60,9 +63,10 @@ completely, everything should be snappy. When a notebook is opened for the *very
 first time*, this delay can be even longer (tens of seconds), since Pluto might
 have to install additional Julia packages.
 
-## Author
-This repository was initiated by [Michael Schlottke-Lakemper](https://lakemper.eu),
-who is also its principal maintainer. Several of the notebooks hosted here are
+## Authors
+This repository was initiated by [Michael Schlottke-Lakemper](https://lakemper.eu). 
+He and [Andrés Rueda-Ramírez](https://www.acom.rwth-aachen.de/the-lab/team-people/name:andr-s_rueda-ram-rez)
+are the principal developers. Several of the notebooks hosted here are
 based on ideas first developed by [Manuel Torrilhon](https://www.acom.rwth-aachen.de).
 
 ## License
