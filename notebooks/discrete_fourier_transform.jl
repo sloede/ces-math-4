@@ -67,14 +67,14 @@ md"""
 """
 
 # ╔═╡ 9e81ff03-1e93-4664-a030-32c593b2be0a
-function cos_plus_1(x)
-	return cos(x) + 1
+function _2cosx_2sin3x(x)
+	return 2*cos(x) + 2*sin(3*x)
 end
 
 # ╔═╡ 889fb26d-338c-45f8-b621-640ad42c44ae
 md"""
 ##### Fourier transform settings
-Function to take DFT: ``f = ``$(@bind selected_function Select([cos, sin, cos_plus_1])) ``(\omega_0 (x - \phi))``
+Function to take DFT: ``f = ``$(@bind selected_function Select([cos, sin, _2cosx_2sin3x])) ``(\omega_0 (x - \phi))``
 
 Frequency ``\omega_0``: $(@bind omega0 Slider(1:0.05:15, default=1, show_value=true))
 
@@ -96,7 +96,7 @@ Plot sin: $(@bind plot_sin Select(["no", "yes"]))
 # ╔═╡ 8156b2cc-bd11-4714-82c5-00f97eceec8c
 md"""
 ### Definitions for functions to compute node locations
-The following functions compute the node locations with an equidistant distribution or as the roots of the Chebyshev polynomial.
+The following function compute the node locations with an equidistant distribution.
 """
 
 # ╔═╡ e560e608-ac7a-427d-9e2f-715ad01283da
@@ -156,7 +156,7 @@ begin
 	)
 	
 	# Plot exact function
-	label_exact = L"f = %$(nameof(selected_function))$\,(x)$"
+	label_exact = L"f = %$(nameof(selected_function))$\,(%$(omega0) x)$"
     plot!(p1, xvalues, exact_values, label=label_exact, linewidth=3, linecolor=:blue)
 
 	# Plot markers at node locations
